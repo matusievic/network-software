@@ -1,4 +1,4 @@
-package by.bsuir.nc.runner;
+package by.bsuir.nc.server.runner;
 
 import by.bsuir.nc.server.Server;
 

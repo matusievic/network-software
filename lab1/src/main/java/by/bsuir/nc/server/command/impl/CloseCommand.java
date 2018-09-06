@@ -8,7 +8,7 @@ import java.net.Socket;
 import java.util.Scanner;
 
 public class CloseCommand implements ServerCommand {
-    public void execute(Socket client, Scanner input, Writer output, Object[] params) throws IOException {
+    public void execute(Socket client, Scanner input, Writer output, String command) throws IOException {
         System.out.println("CLIENT: CLOSE");
         output.write("SERVER: Connection is closed\n");
         output.flush();

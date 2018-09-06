@@ -9,16 +9,7 @@ import java.util.Scanner;
 
 public class IgnoreCommand implements ServerCommand {
     @Override
-    public void execute(Socket client, Scanner input, Writer output, Object[] params) throws IOException {
-        String message = null;
-        if (params.length >= 1) {
-            StringBuilder builder = new StringBuilder();
-            for (Object p : params) {
-                builder.append(p.toString() + ' ');
-            }
-            message = builder.toString();
-        }
-
-        System.out.println("CLIENT: " + message);
+    public void execute(Socket client, Scanner input, Writer output, String command) throws IOException {
+        System.out.println("CLIENT: " + command);
     }
 }

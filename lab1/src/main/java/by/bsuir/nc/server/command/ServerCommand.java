@@ -6,5 +6,5 @@ import java.net.Socket;
 import java.util.Scanner;
 
 public interface ServerCommand {
-    void execute(Socket client, Scanner input, Writer output, Object[] params) throws IOException;
+    void execute(Socket client, Scanner input, Writer output, String command) throws IOException;
 }
