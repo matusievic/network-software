@@ -1,6 +1,7 @@
 package by.bsuir.nc.server.command;
 
 import by.bsuir.nc.server.command.impl.CloseCommand;
+import by.bsuir.nc.server.command.impl.DownloadCommand;
 import by.bsuir.nc.server.command.impl.EchoCommand;
 import by.bsuir.nc.server.command.impl.IgnoreCommand;
 import by.bsuir.nc.server.command.impl.TimeCommand;
@@ -19,6 +20,8 @@ public final class CommandProvider {
         commands.put("ECHO", new EchoCommand());
         commands.put("TIME", new TimeCommand());
         commands.put("CLOSE", new CloseCommand());
+
+        commands.put("DOWNLOAD", new DownloadCommand());
     }
 
     public ServerCommand command(String command) {

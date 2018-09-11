@@ -42,7 +42,7 @@ public final class Server {
             // event handling cycle
             while (!client.isClosed() && input.hasNextLine()) {
                 String command = input.nextLine();
-                provider.command(command.split(" ")[0]).execute(client, input, output, command);
+                provider.command(command.split(" ")[0]).execute(client, command);
             }
         }
     }
