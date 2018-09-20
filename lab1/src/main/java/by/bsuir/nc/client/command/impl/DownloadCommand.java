@@ -16,7 +16,6 @@ public class DownloadCommand implements ClientCommand {
     @Override
     public void execute(Socket client, String command) throws IOException {
         System.out.println("INFO: Downloading started");
-        long startTime = System.nanoTime();
 
         Writer output = new PrintWriter(client.getOutputStream());
         DataInputStream input = new DataInputStream(client.getInputStream());
@@ -34,11 +33,12 @@ public class DownloadCommand implements ClientCommand {
         }
 
         String fileName = command.substring(command.indexOf(' ') + 1);
-        OutputStream downloadedFile = new FileOutputStream("downloads" + File.separator + fileName);
+        OutputStream downloadedFile = new FileOutputStream("downloads" + File.separator + fileName, true);
 
         long position = 0;
         byte[] buffer = new byte[1];
         int count;
+        long startTime = System.nanoTime();
         while ((count = input.read(buffer)) > 0) {
             downloadedFile.write(buffer, 0, count);
             downloadedFile.flush();
@@ -49,9 +49,9 @@ public class DownloadCommand implements ClientCommand {
             }
         }
 
+        long finishTime = System.nanoTime();
         downloadedFile.close();
 
-        long finishTime = System.nanoTime();
         System.out.println("INFO: Downloading finished");
         System.out.println("Bitrate: " + (length / ((finishTime - startTime) / 1000000000.0)) + " bps");
     }
