@@ -14,11 +14,11 @@ import java.nio.ByteBuffer;
 
 public class DownloadCommand implements ClientCommand {
     @Override
-    public void execute(Socket client, String command) throws IOException {
+    public void execute(Socket server, String command) throws IOException {
         System.out.println("INFO: Downloading started");
 
-        Writer output = new PrintWriter(client.getOutputStream());
-        DataInputStream input = new DataInputStream(client.getInputStream());
+        Writer output = new PrintWriter(server.getOutputStream());
+        DataInputStream input = new DataInputStream(server.getInputStream());
 
         output.write(command + '\n');
         output.flush();

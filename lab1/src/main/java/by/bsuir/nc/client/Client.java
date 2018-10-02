@@ -24,7 +24,7 @@ public final class Client {
     }
 
     public void run() throws IOException {
-        client = new Socket("127.0.0.1", 3345);
+        client = new Socket("192.168.10.2", 3345);
         provider = CommandProvider.instance;
         System.out.println("INFO: Client initialized");
 

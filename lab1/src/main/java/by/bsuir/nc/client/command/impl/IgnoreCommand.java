@@ -7,7 +7,7 @@ import java.net.Socket;
 
 public class IgnoreCommand implements ClientCommand {
     @Override
-    public void execute(Socket client, String command) throws IOException {
+    public void execute(Socket server, String command) throws IOException {
         
     }
 }

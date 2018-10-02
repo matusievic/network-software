@@ -4,5 +4,5 @@ import java.io.IOException;
 import java.net.Socket;
 
 public interface ClientCommand {
-    void execute(Socket client, String command) throws IOException;
+    void execute(Socket server, String command) throws IOException;
 }

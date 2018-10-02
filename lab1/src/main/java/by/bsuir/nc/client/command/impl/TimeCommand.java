@@ -8,12 +8,12 @@ import java.util.Scanner;
 
 public class TimeCommand implements by.bsuir.nc.client.command.ClientCommand {
     @Override
-    public void execute(Socket client, String command) throws IOException {
-        Writer output = new PrintWriter(client.getOutputStream());
+    public void execute(Socket server, String command) throws IOException {
+        Writer output = new PrintWriter(server.getOutputStream());
         output.write(command + '\n');
         output.flush();
 
-        Scanner input = new Scanner(client.getInputStream());
+        Scanner input = new Scanner(server.getInputStream());
         if (input.hasNext()) {
             System.out.println(input.nextLine());
         }

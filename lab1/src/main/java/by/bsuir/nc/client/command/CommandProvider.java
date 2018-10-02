@@ -5,6 +5,7 @@ import by.bsuir.nc.client.command.impl.DownloadCommand;
 import by.bsuir.nc.client.command.impl.EchoCommand;
 import by.bsuir.nc.client.command.impl.IgnoreCommand;
 import by.bsuir.nc.client.command.impl.TimeCommand;
+import by.bsuir.nc.client.command.impl.UploadCommand;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +23,7 @@ public final class CommandProvider {
         commands.put("CLOSE", new CloseCommand());
 
         commands.put("DOWNLOAD", new DownloadCommand());
+        commands.put("UPLOAD", new UploadCommand());
     }
 
     public ClientCommand command(String command) {
