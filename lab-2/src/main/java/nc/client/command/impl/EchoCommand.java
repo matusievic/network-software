@@ -3,13 +3,12 @@ package nc.client.command.impl;
 import nc.client.command.ClientCommand;
 import nc.client.command.CommandProvider;
 
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
 public class EchoCommand implements ClientCommand {
     @Override
-    public void execute(DatagramSocket client, String command) throws IOException {
+    public void execute(DatagramSocket client, String command) throws Exception {
         byte[] datagram = new byte[200];
         datagram[0] = 2;
         datagram[2] = 1;

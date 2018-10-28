@@ -2,12 +2,7 @@ package nc.client;
 
 import nc.client.command.CommandProvider;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 public final class Client {
@@ -26,7 +21,7 @@ public final class Client {
         this.port = port;
     }
 
-    public void run() throws IOException {
+    public void run() throws Exception {
         client = new DatagramSocket();
         provider = CommandProvider.instance;
 
@@ -34,7 +29,9 @@ public final class Client {
 
         while (!client.isClosed() && input.hasNextLine()) {
             String command = input.nextLine();
-            provider.command(command.split(" ")[0]).execute(client, command);
+            try {
+                provider.command(command.split(" ")[0]).execute(client, command);
+            } catch (Exception e) {}
         }
     }
 }

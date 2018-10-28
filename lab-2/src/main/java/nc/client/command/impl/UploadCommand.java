@@ -1,60 +1,88 @@
 package nc.client.command.impl;
 
 import nc.client.command.ClientCommand;
+import nc.client.command.CommandProvider;
+import nc.client.command.impl.upload.AckListener;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class UploadCommand implements ClientCommand {
+    private String fileName;
+    private FileInputStream input;
+    private Map<Short, DatagramPacket> output;
+    private AtomicInteger window;
+    private AckListener ackListener;
+    private short length;
+    private long startTime;
+
     @Override
-    public void execute(DatagramSocket client, String command) throws IOException {
-        /*
-        System.out.println("CLIENT: " + command);
-        System.out.println("INFO: Uploading started");
+    public void execute(DatagramSocket client, String command) throws Exception {
+        this.prepareResources(client, command);
 
-        DataInputStream input = new DataInputStream(client.getInputStream());
-        DataOutputStream output = new DataOutputStream(client.getOutputStream());
-        output.writeBytes(command + '\n');
-        output.flush();
-
-        String fileName = command.split(" ")[1];
-        File file = new File("downloads" + File.separator + fileName);
-        FileInputStream uploadedFile;
+        byte[] initData = new byte[200];
+        initData[0] = 4;
+        System.arraycopy((fileName + "\n").getBytes(), 0, initData, 6, fileName.length() + 1);
+        client.send(new DatagramPacket(initData, 200, CommandProvider.address, CommandProvider.port));
 
 
-        byte[] initPositionBuffer = new byte[Long.BYTES];
-        while (input.read(initPositionBuffer) < 0) ;
-
-        long initPosition = ByteBuffer.wrap(initPositionBuffer).getLong();
-
-        try {
-            uploadedFile = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            output.writeLong(-1L);
-            output.flush();
-            System.out.println("INFO: File not found");
-            return;
-        }
-
-
-        long startTime = System.nanoTime();
-
-        long length = file.length() - uploadedFile.skip(initPosition);
-        output.writeLong(length);
-        output.flush();
-
-        byte[] buffer = new byte[1];
+        byte[] buffer = new byte[195];
+        short current = 1;
+        short total = (short) (Math.ceil((double) length / 195) + 1);
         int count;
-        while ((count = uploadedFile.read(buffer)) > 0) {
-            output.write(buffer, 0, count);
-            output.flush();
+        while ((count = input.read(buffer)) > 0) {
+            while (window.get() >= 10) {
+                Thread.sleep(1000);
+            }
+
+            byte[] datagram = new byte[200];
+            datagram[0] = 4;
+            datagram[1] = (byte) (current >> 8);
+            datagram[2] = (byte) current;
+            datagram[3] = (byte) (total >> 8);
+            datagram[4] = (byte) total;
+            datagram[5] = (byte) count;
+            System.arraycopy(buffer, 0, datagram, 6, count);
+            DatagramPacket packet = new DatagramPacket(datagram, 200, CommandProvider.address, CommandProvider.port);
+            client.send(packet);
+            output.put(current++, packet);
+            window.getAndIncrement();
         }
 
-        long finishTime = System.nanoTime();
-        uploadedFile.close();
+        cleanResources(input);
+    }
 
+    private void prepareResources(DatagramSocket client, String command) throws Exception {
+        fileName = command.split(" ")[1];
+        File file = new File("files" + File.separator + fileName);
+        try {
+            input = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            System.out.println("RESPONSE > File not found");
+            throw new Exception(e);
+        }
+        length = (short) input.available();
+        startTime = System.nanoTime();
+
+        output = Collections.synchronizedMap(new HashMap<>(10));
+        window = new AtomicInteger(0);
+        ackListener = new AckListener(client, output, window);
+        ackListener.start();
+    }
+
+    private void cleanResources(FileInputStream input) throws IOException {
+        long finishTime = System.nanoTime();
+        input.close();
         System.out.println("INFO: Uploading finished");
         System.out.println("Bitrate: " + (length / ((finishTime - startTime) / 1000000000.0)) + " bps");
-        */
     }
+
 }

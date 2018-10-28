@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,23 +40,11 @@ public final class Server {
         }
     }
 
-    public void processPacket(DatagramPacket packet) throws IOException {
+    private void processPacket(DatagramPacket packet) throws IOException {
         byte[] data = packet.getData();
-        int type = data[0];
-        int currentSegment = data[1] << 8 & data[2];
-        int totalSegment = data[3] << 8 & data[4];
+        byte type = data[0];
         InetSocketAddress address = (InetSocketAddress) packet.getSocketAddress();
-
-        if (!packets.containsKey(address)) {
-            packets.put(address, new ArrayList<>());
-        }
-
-        packets.get(address).add(data);
-
-        if (currentSegment == totalSegment) {
-            List<byte[]> datagrams = packets.remove(address);
-            provider.command(datagrams.get(0)[0]).execute(server, address, datagrams);
-        }
+        provider.command(type).execute(server, address, Collections.singletonList(data));
     }
 
     public void interrupt() {

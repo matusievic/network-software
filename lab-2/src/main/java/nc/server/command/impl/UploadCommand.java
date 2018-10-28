@@ -2,71 +2,40 @@ package nc.server.command.impl;
 
 import nc.server.command.ServerCommand;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
-import java.util.HashMap;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 public class UploadCommand implements ServerCommand {
-    private Map<String, Long> interruptedUploads = new HashMap<>();
+    private String outputFileName;
 
     @Override
     public void execute(DatagramSocket server, SocketAddress address, List<byte[]> datagrams) throws IOException {
-        /*System.out.println("CLIENT: " + command);
-        System.out.println("INFO: Uploading started");
-
-        DataOutputStream output = new DataOutputStream(server.getOutputStream());
-        DataInputStream input = new DataInputStream(server.getInputStream());
-
-        String fileName = command.substring(command.indexOf(' ') + 1);
-        OutputStream downloadedFile = new FileOutputStream("files" + File.separator + fileName, true);
-
-        long initPosition = 0;
-        if (interruptedUploads.containsKey(fileName)) {
-            initPosition = interruptedUploads.get(fileName);
-        }
-        output.writeLong(initPosition);
-        output.flush();
-
-        byte[] lengthBuffer = new byte[Long.BYTES];
-        input.read(lengthBuffer);
-
-        long length = ByteBuffer.wrap(lengthBuffer).getLong();
-        if (length == 0) {
-            System.out.println("INFO: File not found");
+        byte[] header = datagrams.get(0);
+        short current = (short) (header[1] << 8 | header[2]);
+        short total = (short) (header[3] << 8 | header[4]);
+        if (current == 0) {
+            outputFileName = new String(Arrays.copyOfRange(header, 6, header.length)).split("\n")[0];
+            Files.createFile(Paths.get("lab-2/server" + File.separator + outputFileName));
             return;
         }
 
-        byte[] buffer = new byte[1];
-        int count;
-        long receivedByteCount = 0;
-        try {
-            while ((count = input.read(buffer)) > 0) {
-                downloadedFile.write(buffer, 0, count);
-                downloadedFile.flush();
-                receivedByteCount += count;
+        FileOutputStream output = new FileOutputStream("lab-2/server" + File.separator + outputFileName, true);
+        output.write(Arrays.copyOfRange(header, 6, 6 + header[5]));
 
-                if (receivedByteCount >= length) {
-                    if (interruptedUploads.containsKey(fileName)) {
-                        interruptedUploads.remove(fileName);
-                    }
-                    break;
-                }
+        header[0] = 5;
+        DatagramPacket ack = new DatagramPacket(header, 0, header.length, address);
+        server.send(ack);
 
-                if (!server.isConnected() || server.isClosed()) {
-                    throw new SocketException("Client disconnected");
-                }
-            }
-        } catch (SocketException e) {
-            interruptedUploads.put(fileName, receivedByteCount - 1);
-            System.out.println("INFO: Uploading interrupted");
-            return;
+        if (current == total) {
+            System.out.println(address + " > downloaded");
         }
-
-        downloadedFile.close();
-
-        System.out.println("INFO: Uploading finished");*/
     }
 }
