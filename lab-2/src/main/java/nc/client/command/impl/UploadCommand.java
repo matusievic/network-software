@@ -34,9 +34,9 @@ public class UploadCommand implements ClientCommand {
         client.send(new DatagramPacket(initData, 200, CommandProvider.address, CommandProvider.port));
 
 
-        byte[] buffer = new byte[195];
+        byte[] buffer = new byte[126];
         short current = 1;
-        short total = (short) (Math.ceil((double) length / 195) + 1);
+        short total = (short) (Math.ceil((double) length / 126) + 1);
         int count;
         while ((count = input.read(buffer)) > 0) {
             while (window.get() >= 10) {
