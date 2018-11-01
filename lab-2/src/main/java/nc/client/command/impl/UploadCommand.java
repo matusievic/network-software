@@ -106,7 +106,6 @@ public class UploadCommand implements ClientCommand {
     private void cleanResources(FileInputStream input) throws IOException {
         long finishTime = System.nanoTime();
         input.close();
-        System.out.println("INFO: Uploading finished");
-        System.out.println("Bitrate: " + (length / ((finishTime - startTime) / 1000000000.0)) + " bps");
+        System.out.println("RESPONSE > SUCCESSFUL " + (length / ((finishTime - startTime) / 1000000000.0)) + " bps");
     }
 }

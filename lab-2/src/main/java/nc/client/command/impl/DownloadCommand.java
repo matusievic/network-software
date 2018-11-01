@@ -13,9 +13,11 @@ import java.util.Arrays;
 public class DownloadCommand implements ClientCommand {
     private String fileName;
     private FileOutputStream output;
+    private long startTime;
 
     @Override
     public void execute(DatagramSocket client, String command) throws Exception {
+        startTime = System.nanoTime();
         fileName = command.split(" ")[1];
 
         DatagramPacket initPacket = this.createInitPacket();
@@ -30,6 +32,7 @@ public class DownloadCommand implements ClientCommand {
         DatagramPacket packet = new DatagramPacket(data, 0, data.length);
         output = new FileOutputStream("lab-2/client" + File.separator + fileName, true);
 
+        int length;
         while (true) {
             client.receive(packet);
             byte[] header = packet.getData();
@@ -43,11 +46,14 @@ public class DownloadCommand implements ClientCommand {
             client.send(ack);
 
             if (current >= total) {
+                length = total * 126;
                 break;
             }
         }
 
-        System.out.println("RESPONSE > downloaded");
+        output.close();
+        long finishTime = System.nanoTime();
+        System.out.println("RESPONSE > SUCCESSFUL " + (length / ((finishTime - startTime) / 1000000000.0)) + " bps");
     }
 
     private DatagramPacket createInitPacket() {

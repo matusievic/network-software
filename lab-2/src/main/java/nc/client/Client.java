@@ -3,6 +3,7 @@ package nc.client;
 import nc.client.command.CommandProvider;
 
 import java.net.DatagramSocket;
+import java.net.SocketTimeoutException;
 import java.util.Scanner;
 
 public final class Client {
@@ -23,6 +24,7 @@ public final class Client {
 
     public void run() throws Exception {
         client = new DatagramSocket();
+        client.setSoTimeout(5000);
         provider = CommandProvider.instance;
 
         Scanner input = new Scanner(System.in);
@@ -31,6 +33,8 @@ public final class Client {
             String command = input.nextLine();
             try {
                 provider.command(command.split(" ")[0]).execute(client, command);
+            } catch (SocketTimeoutException e) {
+                System.out.println("RESPONSE > TIMEOUT");
             } catch (Exception e) {}
         }
     }
