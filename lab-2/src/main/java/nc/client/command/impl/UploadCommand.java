@@ -28,36 +28,61 @@ public class UploadCommand implements ClientCommand {
     public void execute(DatagramSocket client, String command) throws Exception {
         this.prepareResources(client, command);
 
-        byte[] initData = new byte[200];
-        initData[0] = 4;
-        System.arraycopy((fileName + "\n").getBytes(), 0, initData, 6, fileName.length() + 1);
-        client.send(new DatagramPacket(initData, 200, CommandProvider.address, CommandProvider.port));
-
+        DatagramPacket initPacket = this.createInitPacket();
+        client.send(initPacket);
 
         byte[] buffer = new byte[126];
         short current = 1;
         short total = (short) (Math.ceil((double) length / 126) + 1);
         int count;
-        while ((count = input.read(buffer)) > 0) {
-            while (window.get() >= 10) {
-                Thread.sleep(1000);
-            }
 
-            byte[] datagram = new byte[200];
-            datagram[0] = 4;
-            datagram[1] = (byte) (current >> 8);
-            datagram[2] = (byte) current;
-            datagram[3] = (byte) (total >> 8);
-            datagram[4] = (byte) total;
-            datagram[5] = (byte) count;
-            System.arraycopy(buffer, 0, datagram, 6, count);
-            DatagramPacket packet = new DatagramPacket(datagram, 200, CommandProvider.address, CommandProvider.port);
+        while ((count = input.read(buffer)) > 0) {
+            this.waitForWindow(client);
+            DatagramPacket packet = createPacket(buffer, current, total, count);
             client.send(packet);
             output.put(current++, packet);
             window.getAndIncrement();
         }
 
         cleanResources(input);
+    }
+
+    private DatagramPacket createInitPacket() {
+        byte[] initData = new byte[200];
+        initData[0] = 4;
+        System.arraycopy((fileName + "\n").getBytes(), 0, initData, 6, fileName.length() + 1);
+        return new DatagramPacket(initData, 200, CommandProvider.address, CommandProvider.port);
+    }
+
+    private DatagramPacket createPacket(byte[] buffer, short current, short total, int count) {
+        byte[] datagram = new byte[200];
+        datagram[0] = 4;
+        datagram[1] = (byte) (current >> 8);
+        datagram[2] = (byte) current;
+        datagram[3] = (byte) (total >> 8);
+        datagram[4] = (byte) total;
+        datagram[5] = (byte) count;
+        System.arraycopy(buffer, 0, datagram, 6, count);
+        return new DatagramPacket(datagram, 200, CommandProvider.address, CommandProvider.port);
+    }
+
+    private void waitForWindow(DatagramSocket client) throws InterruptedException, IOException {
+        int sleepCount = 0;
+        int maxSleepCount = 10;
+        while (window.get() >= 10) {
+            Thread.sleep(1000);
+            sleepCount++;
+            if (sleepCount >= maxSleepCount) {
+                this.resendPackets(client);
+                sleepCount = 0;
+            }
+        }
+    }
+
+    private void resendPackets(DatagramSocket client) throws IOException {
+        for (DatagramPacket packet : output.values()) {
+            client.send(packet);
+        }
     }
 
     private void prepareResources(DatagramSocket client, String command) throws Exception {
@@ -84,5 +109,4 @@ public class UploadCommand implements ClientCommand {
         System.out.println("INFO: Uploading finished");
         System.out.println("Bitrate: " + (length / ((finishTime - startTime) / 1000000000.0)) + " bps");
     }
-
 }

@@ -1,52 +1,66 @@
 package nc.client.command.impl;
 
 import nc.client.command.ClientCommand;
+import nc.client.command.CommandProvider;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.Arrays;
 
 public class DownloadCommand implements ClientCommand {
+    private String fileName;
+    private FileOutputStream output;
+
     @Override
     public void execute(DatagramSocket client, String command) throws Exception {
-        /*
-        System.out.println("INFO: Downloading started");
+        fileName = command.split(" ")[1];
 
-        Writer output = new PrintWriter(client.getOutputStream());
-        DataInputStream input = new DataInputStream(client.getInputStream());
+        DatagramPacket initPacket = this.createInitPacket();
+        client.send(initPacket);
 
-        output.write(command + '\n');
-        output.flush();
-
-        byte[] lengthBuffer = new byte[Long.BYTES];
-        input.read(lengthBuffer);
-
-        long length = ByteBuffer.wrap(lengthBuffer).getLong();
-        if (length == 0) {
-            System.out.println("INFO: File not found");
+        if (!this.isFleExist(client)) {
+            System.out.println("RESPONSE > There's no such file");
             return;
         }
 
-        String fileName = command.substring(command.indexOf(' ') + 1);
-        OutputStream downloadedFile = new FileOutputStream("downloads" + File.separator + fileName, true);
+        byte[] data = new byte[200];
+        DatagramPacket packet = new DatagramPacket(data, 0, data.length);
+        output = new FileOutputStream("lab-2/client" + File.separator + fileName, true);
 
-        long position = 0;
-        byte[] buffer = new byte[1];
-        int count;
-        long startTime = System.nanoTime();
-        while ((count = input.read(buffer)) > 0) {
-            downloadedFile.write(buffer, 0, count);
-            downloadedFile.flush();
-            position += count;
+        while (true) {
+            client.receive(packet);
+            byte[] header = packet.getData();
+            short current = (short) (header[1] << 8 | header[2]);
+            short total = (short) (header[3] << 8 | header[4]);
 
-            if (position >= length) {
+            output.write(Arrays.copyOfRange(header, 6, 6 + header[5]));
+
+            header[0] = 5;
+            DatagramPacket ack = new DatagramPacket(header, 0, header.length, CommandProvider.address, CommandProvider.port);
+            client.send(ack);
+
+            if (current >= total) {
                 break;
             }
         }
 
-        long finishTime = System.nanoTime();
-        downloadedFile.close();
+        System.out.println("RESPONSE > downloaded");
+    }
 
-        System.out.println("INFO: Downloading finished");
-        System.out.println("Bitrate: " + (length / ((finishTime - startTime) / 1000000000.0)) + " bps");
-        */
+    private DatagramPacket createInitPacket() {
+        byte[] initData = new byte[200];
+        initData[0] = 3;
+        System.arraycopy((fileName + "\n").getBytes(), 0, initData, 6, fileName.length() + 1);
+        return new DatagramPacket(initData, 200, CommandProvider.address, CommandProvider.port);
+    }
+
+    private boolean isFleExist(DatagramSocket client) throws IOException {
+        byte[] buf = new byte[200];
+        DatagramPacket packet = new DatagramPacket(buf, 200);
+        client.receive(packet);
+        return packet.getData()[0] != 7;
     }
 }
