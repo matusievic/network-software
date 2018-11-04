@@ -8,6 +8,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class DownloadCommand implements ClientCommand {
@@ -30,6 +32,7 @@ public class DownloadCommand implements ClientCommand {
 
         byte[] data = new byte[200];
         DatagramPacket packet = new DatagramPacket(data, 0, data.length);
+        Files.createFile(Paths.get("lab-2/client" + File.separator + fileName));
         output = new FileOutputStream("lab-2/client" + File.separator + fileName, true);
 
         int length;
@@ -45,6 +48,7 @@ public class DownloadCommand implements ClientCommand {
             DatagramPacket ack = new DatagramPacket(header, 0, header.length, CommandProvider.address, CommandProvider.port);
             client.send(ack);
 
+            System.out.println("\treceiving " + current + " / " + total);
             if (current >= total) {
                 length = total * 126;
                 break;

@@ -23,6 +23,7 @@ public class UploadCommand implements ServerCommand {
         short total = (short) (header[3] << 8 | header[4]);
         if (current == 0) {
             outputFileName = new String(Arrays.copyOfRange(header, 6, header.length)).split("\n")[0];
+            System.out.println(address + " > UPLOAD " + outputFileName);
             Files.createFile(Paths.get("lab-2/server" + File.separator + outputFileName));
             return;
         }
@@ -34,8 +35,9 @@ public class UploadCommand implements ServerCommand {
         DatagramPacket ack = new DatagramPacket(header, 0, header.length, address);
         server.send(ack);
 
+        System.out.println("\treceiving " + current + " / " + total);
         if (current == total) {
-            System.out.println(address + " > downloaded");
+            System.out.println(address + " > UPLOADING FINISHED");
         }
     }
 }

@@ -2,7 +2,7 @@ package nc.client.command.impl;
 
 import nc.client.command.ClientCommand;
 import nc.client.command.CommandProvider;
-import nc.client.command.impl.upload.AckListener;
+import nc.util.AckListener;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,7 +33,7 @@ public class UploadCommand implements ClientCommand {
 
         byte[] buffer = new byte[126];
         short current = 1;
-        short total = (short) (Math.ceil((double) length / 126) + 1);
+        short total = (short) Math.ceil((double) length / 126);
         int count;
 
         while ((count = input.read(buffer)) > 0) {
@@ -42,8 +42,12 @@ public class UploadCommand implements ClientCommand {
             client.send(packet);
             output.put(current++, packet);
             window.getAndIncrement();
+            System.out.println("\tsending " + current + " / " + total);
         }
 
+        while (window.get() != 0) {
+            Thread.sleep(1000);
+        }
         cleanResources(input);
     }
 
@@ -81,13 +85,17 @@ public class UploadCommand implements ClientCommand {
 
     private void resendPackets(DatagramSocket client) throws IOException {
         for (DatagramPacket packet : output.values()) {
+            byte[] datagram = packet.getData();
+            short current = (short) (datagram[1] << 8 | datagram[2]);
+            short total = (short) (datagram[3] << 8 | datagram[4]);
             client.send(packet);
+            System.out.println("\tresending " + current + " / " + total);
         }
     }
 
     private void prepareResources(DatagramSocket client, String command) throws Exception {
         fileName = command.split(" ")[1];
-        File file = new File("files" + File.separator + fileName);
+        File file = new File("lab-2/client" + File.separator + fileName);
         try {
             input = new FileInputStream(file);
         } catch (FileNotFoundException e) {
@@ -106,6 +114,7 @@ public class UploadCommand implements ClientCommand {
     private void cleanResources(FileInputStream input) throws IOException {
         long finishTime = System.nanoTime();
         input.close();
+        ackListener.interrupt();
         System.out.println("RESPONSE > SUCCESSFUL " + (length / ((finishTime - startTime) / 1000000000.0)) + " bps");
     }
 }

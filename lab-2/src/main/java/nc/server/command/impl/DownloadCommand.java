@@ -1,8 +1,7 @@
 package nc.server.command.impl;
 
-import nc.client.command.CommandProvider;
-import nc.client.command.impl.upload.AckListener;
 import nc.server.command.ServerCommand;
+import nc.util.AckListener;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,6 +37,7 @@ public class DownloadCommand implements ServerCommand {
             return;
         }
 
+        System.out.println(address + " > DOWNLOAD " + fileName);
         this.prepareResources(server);
 
         DatagramPacket initPacket = this.createInitPacket(address);
@@ -52,11 +52,15 @@ public class DownloadCommand implements ServerCommand {
             this.waitForWindow(server);
             DatagramPacket packet = createPacket(buffer, current, total, count, address);
             server.send(packet);
+            System.out.println("\tsending " + current + " / " + total);
             output.put(current++, packet);
             window.getAndIncrement();
         }
 
-        this.cleanResources(input);
+        while (window.get() != 0) {
+            Thread.sleep(1000);
+        }
+        this.cleanResources(input, address);
     }
 
     private void sendErrorPacket(DatagramSocket server, SocketAddress address) throws IOException {
@@ -90,15 +94,26 @@ public class DownloadCommand implements ServerCommand {
         return new DatagramPacket(datagram, 0, 200, address);
     }
 
-    private void waitForWindow(DatagramSocket client) throws InterruptedException, IOException {
+    private void waitForWindow(DatagramSocket client) throws Exception {
         int sleepCount = 0;
         int maxSleepCount = 10;
+        boolean flag = false;
         while (window.get() >= 10) {
             Thread.sleep(1000);
             sleepCount++;
             if (sleepCount >= maxSleepCount) {
+                if (flag) {
+                    System.out.println(client.getInetAddress() + " > INTERRUPTED");
+                    ackListener.interrupt();
+                    int last = output.values().stream().mapToInt(d -> {
+                        byte[] data = d.getData();
+                        return (short) (data[1] << 8 | data[2]);
+                    }).min().orElse(0);
+                    throw new Exception();
+                }
                 this.resendPackets(client);
                 sleepCount = 0;
+                flag = true;
             }
         }
     }
@@ -106,6 +121,10 @@ public class DownloadCommand implements ServerCommand {
     private void resendPackets(DatagramSocket client) throws IOException {
         for (DatagramPacket packet : output.values()) {
             client.send(packet);
+            byte[] datagram = packet.getData();
+            short current = (short) (datagram[1] << 8 | datagram[2]);
+            short total = (short) (datagram[3] << 8 | datagram[4]);
+            System.out.println("\tresending " + current + " / " + total);
         }
     }
 
@@ -125,10 +144,11 @@ public class DownloadCommand implements ServerCommand {
         ackListener.start();
     }
 
-    private void cleanResources(FileInputStream input) throws IOException {
+    private void cleanResources(FileInputStream input, SocketAddress address) throws IOException {
         long finishTime = System.nanoTime();
         input.close();
-        System.out.println("INFO: Uploading finished");
+        ackListener.interrupt();
+        System.out.println(address + " > DOWNLOADING FINISHED");
         System.out.println("Bitrate: " + (length / ((finishTime - startTime) / 1000000000.0)) + " bps");
     }
 }
