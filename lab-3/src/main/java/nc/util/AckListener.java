@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,8 +22,8 @@ public class AckListener extends Thread {
 
     @Override
     public void run() {
-        byte[] buf = new byte[200];
-        DatagramPacket packet = new DatagramPacket(buf, 200);
+        byte[] buf = new byte[PacketConf.size];
+        DatagramPacket packet = new DatagramPacket(buf, buf.length);
         try {
             while (!isInterrupted) {
                 try {
@@ -33,10 +34,11 @@ public class AckListener extends Thread {
                     }
                 }
                 byte[] packContent = packet.getData();
-                if (packContent[0] == 5) {
-                    short index = (short) ((packContent[1] << 8) | packContent[2]);
-                    System.out.println("\tack " + index + " / " + (packContent[3] << 8 | packContent[4]));
-                    output.remove(index);
+                if (packContent[PacketConf.operationOffset] == Operations.UPLOAD) {
+                    short current = BitOps.byteToShort(Arrays.copyOfRange(packContent, PacketConf.currentOffset, PacketConf.currentOffset + 2));
+                    short total = BitOps.byteToShort(Arrays.copyOfRange(packContent, PacketConf.totalOffset, PacketConf.totalOffset + 2));
+                    System.out.println("\tack " + current + " / " + total);
+                    output.remove(current);
                     window.getAndDecrement();
                 }
             }

@@ -13,8 +13,8 @@ public final class Client {
     private int port;
 
     public Client() {
-        this.hostname = "localhost";
-        this.port = 3345;
+        this.hostname = "192.168.10.2";
+        this.port   = 3345;
     }
 
     public Client(String hostname, int port) {

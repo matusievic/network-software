@@ -8,4 +8,5 @@ public final class PacketConf {
     public static final int countOffset = 6;
     public static final int payloadOffset = 8;
     public static final int size = 200;
+    public static final int payloadSize = 126;
 }

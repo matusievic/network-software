@@ -74,7 +74,7 @@ public final class Server {
 
     private void sendAck(InetSocketAddress address, byte[] data) throws IOException {
         byte[] datagram = Arrays.copyOf(data, data.length);
-        datagram[1] = 1;
+        datagram[PacketConf.typeOffset] = Types.ACKNOWLEDGE;
         DatagramPacket packet = new DatagramPacket(datagram, 0, data.length, address);
         server.send(packet);
     }

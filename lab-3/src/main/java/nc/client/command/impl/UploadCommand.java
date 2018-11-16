@@ -3,6 +3,10 @@ package nc.client.command.impl;
 import nc.client.command.ClientCommand;
 import nc.client.command.CommandProvider;
 import nc.util.AckListener;
+import nc.util.DataBuilder;
+import nc.util.Operations;
+import nc.util.PacketConf;
+import nc.util.Types;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,9 +35,9 @@ public class UploadCommand implements ClientCommand {
         DatagramPacket initPacket = this.createInitPacket();
         client.send(initPacket);
 
-        byte[] buffer = new byte[126];
+        byte[] buffer = new byte[PacketConf.payloadSize];
         short current = 1;
-        short total = (short) Math.ceil((double) length / 126);
+        short total = (short) Math.ceil((double) length / PacketConf.payloadSize);
         int count;
 
         while ((count = input.read(buffer)) > 0) {
@@ -59,14 +63,7 @@ public class UploadCommand implements ClientCommand {
     }
 
     private DatagramPacket createPacket(byte[] buffer, short current, short total, int count) {
-        byte[] datagram = new byte[200];
-        datagram[0] = 4;
-        datagram[1] = (byte) (current >> 8);
-        datagram[2] = (byte) current;
-        datagram[3] = (byte) (total >> 8);
-        datagram[4] = (byte) total;
-        datagram[5] = (byte) count;
-        System.arraycopy(buffer, 0, datagram, 6, count);
+        byte[] datagram = DataBuilder.build(Operations.UPLOAD, Types.PACKET, current, total, buffer);
         return new DatagramPacket(datagram, 200, CommandProvider.address, CommandProvider.port);
     }
 
