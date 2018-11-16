@@ -15,7 +15,7 @@ public class EchoCommand implements ClientCommand {
     @Override
     public void execute(DatagramSocket client, String command) throws Exception {
         byte[] message = (command.substring(command.indexOf(' '))).getBytes();
-        byte[] datagram = DataBuilder.build(Operations.ECHO, Types.PACKET, 1, 1, message);
+        byte[] datagram = DataBuilder.build(Operations.ECHO, Types.PACKET, 0, 0, message);
 
         DatagramPacket packet = new DatagramPacket(datagram, datagram.length, CommandProvider.address, CommandProvider.port);
         client.send(packet);

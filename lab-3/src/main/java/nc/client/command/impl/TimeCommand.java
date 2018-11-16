@@ -15,7 +15,7 @@ import java.util.Arrays;
 public class TimeCommand implements ClientCommand {
     @Override
     public void execute(DatagramSocket client, String command) throws Exception {
-        byte[] datagram = DataBuilder.build(Operations.TIME, Types.PACKET, 1, 1, null);
+        byte[] datagram = DataBuilder.build(Operations.TIME, Types.PACKET, 0, 0,null);
 
         DatagramPacket packet = new DatagramPacket(datagram, datagram.length, CommandProvider.address, CommandProvider.port);
         client.send(packet);

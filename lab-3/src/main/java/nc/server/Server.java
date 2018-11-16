@@ -36,9 +36,9 @@ public final class Server {
         server = new DatagramSocket(port);
         provider = CommandProvider.instance;
 
-        byte[] buf = new byte[200];
-        packet = new DatagramPacket(buf, 200);
         while (!interrupted) {
+            byte[] buf = new byte[200];
+            packet = new DatagramPacket(buf, 200);
             server.receive(packet);
             try {
                 processPacket(packet);
@@ -50,16 +50,17 @@ public final class Server {
     private void processPacket(DatagramPacket packet) throws Exception {
         InetSocketAddress address = (InetSocketAddress) packet.getSocketAddress();
         byte[] data = packet.getData();
-        byte operation = data[0];
-        byte type = data[1];
+        byte operation = data[PacketConf.operationOffset];
+        byte type = data[PacketConf.typeOffset];
         short current = BitOps.byteToShort(Arrays.copyOfRange(data, PacketConf.currentOffset, PacketConf.currentOffset + 2));
         short total = BitOps.byteToShort(Arrays.copyOfRange(data, PacketConf.totalOffset, PacketConf.totalOffset + 2));
 
+        System.out.println(address + " > " + current + " / " + total);
         if (type == Types.PACKET) {
             sendAck(address, data);
         }
 
-        if (current == 1) {
+        if (current == 0) {
             ArrayList<byte[]> list = new ArrayList<>();
             list.add(data);
             datagrams.put(address, list);

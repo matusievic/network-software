@@ -29,6 +29,9 @@ public class AckListener extends Thread {
                 try {
                     client.receive(packet);
                 } catch (SocketTimeoutException e) {
+                    if (window.get() <= 0) {
+                        this.interrupt();
+                    }
                     if (!isInterrupted) {
                         throw e;
                     }

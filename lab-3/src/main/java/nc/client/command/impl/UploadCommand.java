@@ -7,6 +7,7 @@ import nc.util.DataBuilder;
 import nc.util.Operations;
 import nc.util.PacketConf;
 import nc.util.Types;
+import nc.util.WindowConfig;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,49 +32,47 @@ public class UploadCommand implements ClientCommand {
     @Override
     public void execute(DatagramSocket client, String command) throws Exception {
         this.prepareResources(client, command);
+        byte[] buffer = new byte[PacketConf.payloadSize];
 
-        DatagramPacket initPacket = this.createInitPacket();
+        short current = 1;
+        short total = (short) Math.ceil(((double) length) / ((double) PacketConf.payloadSize));
+
+        DatagramPacket initPacket = this.createInitPacket(total);
         client.send(initPacket);
 
-        byte[] buffer = new byte[PacketConf.payloadSize];
-        short current = 1;
-        short total = (short) Math.ceil((double) length / PacketConf.payloadSize);
         int count;
-
         while ((count = input.read(buffer)) > 0) {
             this.waitForWindow(client);
             DatagramPacket packet = createPacket(buffer, current, total, count);
             client.send(packet);
-            output.put(current++, packet);
+            output.put(current, packet);
             window.getAndIncrement();
             System.out.println("\tsending " + current + " / " + total);
+            current++;
         }
 
-        while (window.get() != 0) {
+        while (window.get() > 0) {
             Thread.sleep(1000);
         }
         cleanResources(input);
     }
 
-    private DatagramPacket createInitPacket() {
-        byte[] initData = new byte[200];
-        initData[0] = 4;
-        System.arraycopy((fileName + "\n").getBytes(), 0, initData, 6, fileName.length() + 1);
-        return new DatagramPacket(initData, 200, CommandProvider.address, CommandProvider.port);
+    private DatagramPacket createInitPacket(short total) {
+        byte[] initData = DataBuilder.build(Operations.UPLOAD, Types.PACKET, 0, total, (fileName + "\n").getBytes());
+        return new DatagramPacket(initData, PacketConf.size, CommandProvider.address, CommandProvider.port);
     }
 
     private DatagramPacket createPacket(byte[] buffer, short current, short total, int count) {
-        byte[] datagram = DataBuilder.build(Operations.UPLOAD, Types.PACKET, current, total, buffer);
-        return new DatagramPacket(datagram, 200, CommandProvider.address, CommandProvider.port);
+        byte[] datagram = DataBuilder.build(Operations.UPLOAD, Types.PACKET, current, total, buffer, count);
+        return new DatagramPacket(datagram, PacketConf.size, CommandProvider.address, CommandProvider.port);
     }
 
     private void waitForWindow(DatagramSocket client) throws InterruptedException, IOException {
         int sleepCount = 0;
-        int maxSleepCount = 10;
         while (window.get() >= 10) {
             Thread.sleep(1000);
             sleepCount++;
-            if (sleepCount >= maxSleepCount) {
+            if (sleepCount >= WindowConfig.maxSleepCount) {
                 this.resendPackets(client);
                 sleepCount = 0;
             }
@@ -92,7 +91,7 @@ public class UploadCommand implements ClientCommand {
 
     private void prepareResources(DatagramSocket client, String command) throws Exception {
         fileName = command.split(" ")[1];
-        File file = new File("lab-2/client" + File.separator + fileName);
+        File file = new File("lab-3/client" + File.separator + fileName);
         try {
             input = new FileInputStream(file);
         } catch (FileNotFoundException e) {
@@ -102,7 +101,7 @@ public class UploadCommand implements ClientCommand {
         length = (short) input.available();
         startTime = System.nanoTime();
 
-        output = Collections.synchronizedMap(new HashMap<>(10));
+        output = Collections.synchronizedMap(new HashMap<>(WindowConfig.size));
         window = new AtomicInteger(0);
         ackListener = new AckListener(client, output, window);
         ackListener.start();

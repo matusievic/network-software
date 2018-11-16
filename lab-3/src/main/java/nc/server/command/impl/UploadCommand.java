@@ -27,7 +27,7 @@ public class UploadCommand implements ServerCommand {
 
         FileOutputStream output = new FileOutputStream("lab-3/server" + File.separator + outputFileName, true);
         for (byte[] d : datagrams) {
-            count = BitOps.byteToShort(Arrays.copyOfRange(init, PacketConf.countOffset, PacketConf.countOffset + 2));
+            count = BitOps.byteToShort(Arrays.copyOfRange(d, PacketConf.countOffset, PacketConf.countOffset + 2));
             output.write(Arrays.copyOfRange(d, PacketConf.payloadOffset, PacketConf.payloadOffset + count));
         }
 
